@@ -18,7 +18,7 @@ Based on your analysis, create a detailed plan for implementing these changes on
 3. Code areas that will be affected
 4. Potential risks and mitigation strategies
 
-Next, consider how these changes might affect other issues in the GitHub issues list for this project. Please get the list of all issues and understand if there could be interactions between them if there are changes in code. If there could be any changes store them in potential_changes.md. If there already is a potential_changes.md file, please create a new file called potential_changes_{issuenumber}.md.
+Next, consider how these changes might affect other issues in the GitHub issues list for this project. Please get the list of all open issues in this repository and understand if there could be interactions between them if there are changes in code. If there could be any changes store them in potential_changes.md. If there already is a potential_changes.md file, please create a new file called potential_changes_{issuenumber}.md.
 
 Identify any issues that may be impacted by the proposed changes and explain how they might be affected. Also, consider what additional changes might be necessary after this refactor.
 
