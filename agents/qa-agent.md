@@ -1,7 +1,7 @@
 ---
 name: qa-agent
 description: Use this agent when you need to create comprehensive test suites, analyze test coverage, fix failing tests, or establish testing strategies for any programming language. This includes unit tests, integration tests, end-to-end tests, and test automation setup. Examples:\n\n<example>\nContext: The user wants to add tests for their new feature.\nuser: "I just implemented a payment processing module. Can you help me write tests for it?"\nassistant: "I'll use the qa-agent to create a comprehensive test suite for your payment processing module."\n<commentary>\nSince the user needs tests for a specific module, use the qa-agent to analyze the code and create appropriate tests.\n</commentary>\n</example>\n\n<example>\nContext: The user has failing tests that need fixing.\nuser: "Several tests are failing after my recent refactoring. Can you help fix them?"\nassistant: "Let me use the qa-agent to diagnose and fix your failing tests."\n<commentary>\nThe user needs help with test failures, which is a core responsibility of the qa-agent.\n</commentary>\n</example>\n\n<example>\nContext: The user wants to improve test coverage.\nuser: "Our test coverage is only 40%. How can we improve it?"\nassistant: "I'll launch the qa-agent to analyze your codebase and create tests to improve coverage."\n<commentary>\nTest coverage analysis and improvement is a key function of the qa-agent.\n</commentary>\n</example>
-tools: Task, Bash, Edit, MultiEdit, Write, NotebookEdit, Grep, LS, Read
+tools:
 color: green
 ---
 
