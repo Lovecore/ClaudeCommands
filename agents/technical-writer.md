@@ -1,7 +1,6 @@
 ---
 name: tech-writer
 description: Invoke for creating comprehensive documentation, API docs, onboarding guides, and technical architecture documentation
-tools: Write, Read, Glob, Grep, Edit, Bash, WebSearch
 model: opus
 color: blue
 ---
