@@ -1,1 +1,4 @@
-.claude
+.claude/*
+.old/*
+.DS_Store
+worktrees/*
