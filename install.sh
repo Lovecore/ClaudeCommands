@@ -29,9 +29,13 @@ SCRIPTS_TARGET="$HOME/.local/bin"
 
 # Backup directory with timestamp
 BACKUP_DIR="$CLAUDE_DIR/backups/$(date +%Y%m%d_%H%M%S)"
+BACKUPS_BASE_DIR="$CLAUDE_DIR/backups"
 
 # Installation mode (copy or symlink)
 INSTALL_MODE=""
+
+# Maximum number of backups to keep
+MAX_BACKUPS=2
 
 # Function to print colored output
 print_status() {
@@ -208,29 +212,217 @@ install_files() {
     fi
 }
 
+# Function to manage backups
+manage_backups() {
+    while true; do
+        echo ""
+        echo "Backup Management"
+        echo "================="
+        
+        # Show current backup status
+        if [ -d "$BACKUPS_BASE_DIR" ]; then
+            local backup_count=$(find "$BACKUPS_BASE_DIR" -maxdepth 1 -type d -name "*_*" | wc -l | tr -d ' ')
+            echo "Backup location: $BACKUPS_BASE_DIR"
+            echo "Current backups: $backup_count"
+            
+            if [ $backup_count -gt 0 ]; then
+                echo ""
+                echo "Available backups:"
+                find "$BACKUPS_BASE_DIR" -maxdepth 1 -type d -name "*_*" -exec basename {} \; | sort -r | sed 's/^/  - /'
+            fi
+        else
+            echo "Backup location: $BACKUPS_BASE_DIR (not created yet)"
+            echo "Current backups: 0"
+        fi
+        
+        echo ""
+        echo "Options:"
+        echo "1) View backup details"
+        echo "2) Clear all backups"
+        echo "3) Clear old backups (keep $MAX_BACKUPS most recent)"
+        echo "4) Change backup retention count"
+        echo "5) Return to main menu"
+        echo ""
+        read -p "Select option (1-5): " backup_option
+        
+        case $backup_option in
+            1)
+                show_backup_details
+                ;;
+            2)
+                clear_all_backups
+                ;;
+            3)
+                cleanup_old_backups
+                ;;
+            4)
+                change_backup_retention
+                ;;
+            5)
+                break
+                ;;
+            *)
+                print_status "error" "Invalid option. Please select 1-5."
+                ;;
+        esac
+    done
+}
+
+# Function to show detailed backup information
+show_backup_details() {
+    echo ""
+    echo "Backup Details"
+    echo "=============="
+    
+    if [ ! -d "$BACKUPS_BASE_DIR" ] || [ -z "$(ls -A "$BACKUPS_BASE_DIR" 2>/dev/null)" ]; then
+        print_status "info" "No backups found"
+        return
+    fi
+    
+    for backup_dir in "$BACKUPS_BASE_DIR"/*_*; do
+        if [ -d "$backup_dir" ]; then
+            local backup_name=$(basename "$backup_dir")
+            local backup_date=$(echo "$backup_name" | sed 's/_/ /' | sed 's/\(.*\) \(.*\)/\1 \2/')
+            
+            echo ""
+            echo "Backup: $backup_name"
+            echo "Date: $backup_date"
+            echo "Size: $(du -sh "$backup_dir" 2>/dev/null | cut -f1)"
+            
+            if [ -d "$backup_dir" ] && [ "$(ls -A "$backup_dir")" ]; then
+                echo "Contents:"
+                for type_dir in "$backup_dir"/*; do
+                    if [ -d "$type_dir" ] && [ "$(ls -A "$type_dir")" ]; then
+                        local type=$(basename "$type_dir")
+                        local file_count=$(ls -1 "$type_dir" | wc -l | tr -d ' ')
+                        echo "  - $type: $file_count files"
+                    fi
+                done
+            fi
+        fi
+    done
+}
+
+# Function to clear all backups
+clear_all_backups() {
+    echo ""
+    if [ ! -d "$BACKUPS_BASE_DIR" ] || [ -z "$(ls -A "$BACKUPS_BASE_DIR" 2>/dev/null)" ]; then
+        print_status "info" "No backups to clear"
+        return
+    fi
+    
+    local backup_count=$(find "$BACKUPS_BASE_DIR" -maxdepth 1 -type d -name "*_*" | wc -l | tr -d ' ')
+    
+    echo "This will permanently delete all $backup_count backup(s)."
+    read -p "Are you sure? (y/N): " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -rf "$BACKUPS_BASE_DIR"/*_*
+        print_status "success" "All backups cleared"
+    else
+        print_status "info" "Operation cancelled"
+    fi
+}
+
+# Function to change backup retention count
+change_backup_retention() {
+    echo ""
+    read -p "Enter new backup retention count (current: $MAX_BACKUPS): " new_count
+    
+    if [[ "$new_count" =~ ^[0-9]+$ ]] && [ "$new_count" -gt 0 ]; then
+        MAX_BACKUPS=$new_count
+        print_status "success" "Backup retention set to $MAX_BACKUPS"
+        
+        # Ask if they want to apply the new limit now
+        read -p "Apply new limit now? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            cleanup_old_backups
+        fi
+    else
+        print_status "error" "Invalid count. Please enter a positive number."
+    fi
+}
+
 # Function to prompt for installation mode
 get_install_mode() {
     echo ""
-    echo "Installation Mode Selection"
-    echo "---------------------------"
-    echo "1) Copy files (default) - Creates independent copies in ~/.claude"
-    echo "2) Symlink files - Creates symbolic links to your source files"
+    echo "Installation Configuration"
+    echo "========================="
+    
+    echo ""
+    echo "Installation Mode:"
+    echo "------------------"
+    echo "1) Copy files - Creates independent copies in ~/.claude"
+    echo "2) Symlink files (default) - Creates symbolic links to your source files"
+    echo "3) Backup management - Manage existing backups"
     echo ""
     echo "Symlinks are useful for development as changes to source files"
     echo "are immediately reflected without reinstalling."
     echo ""
-    read -p "Select installation mode (1 or 2) [1]: " mode_choice
+    read -p "Select installation mode (1, 2, or 3) [2]: " mode_choice
     
     case $mode_choice in
-        2)
-            INSTALL_MODE="symlink"
-            print_status "info" "Using symlink mode"
-            ;;
-        *)
+        1)
             INSTALL_MODE="copy"
             print_status "info" "Using copy mode"
             ;;
+        3)
+            manage_backups
+            # After backup management, ask again for installation mode
+            get_install_mode
+            return
+            ;;
+        *)
+            INSTALL_MODE="symlink"
+            print_status "info" "Using symlink mode"
+            ;;
     esac
+    
+    echo ""
+    echo "Backup Configuration:"
+    echo "--------------------"
+    echo "The installer creates backups of existing files before replacing them."
+    echo "Old backups are automatically cleaned up to save disk space."
+    echo ""
+    read -p "Number of backups to keep (default: $MAX_BACKUPS): " backup_choice
+    if [[ "$backup_choice" =~ ^[0-9]+$ ]] && [ "$backup_choice" -gt 0 ]; then
+        MAX_BACKUPS=$backup_choice
+        print_status "info" "Will keep $MAX_BACKUPS backup(s)"
+    else
+        print_status "info" "Using default: $MAX_BACKUPS backup(s)"
+    fi
+}
+
+# Function to clean up old backups
+cleanup_old_backups() {
+    if [ ! -d "$BACKUPS_BASE_DIR" ]; then
+        return 0
+    fi
+    
+    # Get all backup directories sorted by modification time (newest first)
+    local backup_dirs=()
+    while IFS= read -r -d '' dir; do
+        backup_dirs+=("$dir")
+    done < <(find "$BACKUPS_BASE_DIR" -maxdepth 1 -type d -name "*_*" -print0 | sort -z -r)
+    
+    local count=${#backup_dirs[@]}
+    
+    if [ $count -gt $MAX_BACKUPS ]; then
+        local to_remove=$((count - MAX_BACKUPS))
+        print_status "info" "Cleaning up old backups (keeping $MAX_BACKUPS most recent)"
+        
+        for ((i=MAX_BACKUPS; i<count; i++)); do
+            local backup_to_remove="${backup_dirs[i]}"
+            if [ -d "$backup_to_remove" ]; then
+                rm -rf "$backup_to_remove"
+                print_status "info" "Removed old backup: $(basename "$backup_to_remove")"
+            fi
+        done
+        
+        print_status "success" "Removed $to_remove old backup(s)"
+    fi
 }
 
 # Function to show backup information
@@ -239,7 +431,14 @@ show_backup_info() {
         echo ""
         echo "Backup Information"
         echo "------------------"
-        print_status "info" "Backups saved to: $BACKUP_DIR"
+        print_status "info" "Current backup saved to: $BACKUP_DIR"
+        
+        # Show total number of backups kept
+        local total_backups=0
+        if [ -d "$BACKUPS_BASE_DIR" ]; then
+            total_backups=$(find "$BACKUPS_BASE_DIR" -maxdepth 1 -type d -name "*_*" | wc -l | tr -d ' ')
+        fi
+        print_status "info" "Total backups maintained: $total_backups (max: $MAX_BACKUPS)"
         
         for type_dir in "$BACKUP_DIR"/*; do
             if [ -d "$type_dir" ] && [ "$(ls -A $type_dir)" ]; then
@@ -299,6 +498,11 @@ main() {
     echo ""
     echo "Installing scripts..."
     install_scripts "$SCRIPTS_SOURCE" "$SCRIPTS_TARGET"
+    
+    # Clean up old backups
+    echo ""
+    echo "Managing backups..."
+    cleanup_old_backups
     
     # Create example files if no source directories exist
     if [ ! -d "$HOOKS_SOURCE" ] && [ ! -d "$COMMANDS_SOURCE" ] && [ ! -d "$AGENTS_SOURCE" ]; then
