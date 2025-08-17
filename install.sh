@@ -19,11 +19,13 @@ SOURCE_DIR="$(pwd)"
 HOOKS_SOURCE="$SOURCE_DIR/hooks"
 COMMANDS_SOURCE="$SOURCE_DIR/commands"
 AGENTS_SOURCE="$SOURCE_DIR/agents"
+SCRIPTS_SOURCE="$SOURCE_DIR"
 
 # Target directories
 HOOKS_TARGET="$CLAUDE_DIR/hooks"
 COMMANDS_TARGET="$CLAUDE_DIR/commands"
 AGENTS_TARGET="$CLAUDE_DIR/agents"
+SCRIPTS_TARGET="$HOME/.local/bin"
 
 # Backup directory with timestamp
 BACKUP_DIR="$CLAUDE_DIR/backups/$(date +%Y%m%d_%H%M%S)"
@@ -87,6 +89,67 @@ backup_file() {
     fi
     
     return 1
+}
+
+# Function to install specific scripts
+install_scripts() {
+    local source_dir=$1
+    local target=$2
+    
+    ensure_directory "$target"
+    
+    local script_files=("new-worktree.sh")
+    local count=0
+    local backed_up=0
+    
+    for script in "${script_files[@]}"; do
+        local source_file="$source_dir/$script"
+        if [ -f "$source_file" ]; then
+            local target_name="${script%.sh}"  # Remove .sh extension
+            local target_file="$target/$target_name"
+            
+            # Backup existing file if it exists
+            if backup_file "$target_file" "scripts"; then
+                ((backed_up++))
+            fi
+            
+            # Remove existing file/symlink
+            if [ -e "$target_file" ] || [ -L "$target_file" ]; then
+                rm -f "$target_file"
+            fi
+            
+            if [ "$INSTALL_MODE" == "symlink" ]; then
+                # Create symlink
+                ln -s "$(realpath "$source_file")" "$target_file"
+                print_status "success" "Symlinked script: $target_name"
+            else
+                # Copy file
+                cp "$source_file" "$target_file"
+                chmod +x "$target_file"
+                print_status "success" "Installed script: $target_name"
+            fi
+            
+            ((count++))
+        else
+            print_status "warning" "Script not found: $script"
+        fi
+    done
+    
+    if [ $backed_up -gt 0 ]; then
+        print_status "info" "Backed up $backed_up existing script(s)"
+    fi
+    
+    if [ $count -gt 0 ]; then
+        local action_verb=$([[ "$INSTALL_MODE" == "symlink" ]] && echo "Symlinked" || echo "Installed")
+        print_status "info" "$action_verb $count script(s) to $target"
+        
+        # Check if target directory is in PATH
+        if [[ ":$PATH:" != *":$target:"* ]]; then
+            print_status "warning" "$target is not in your PATH"
+            print_status "info" "Add this line to your shell configuration (.bashrc, .zshrc, etc.):"
+            echo "    export PATH=\"\$PATH:$target\""
+        fi
+    fi
 }
 
 # Function to install files from source to target
@@ -232,6 +295,11 @@ main() {
     echo "Installing agents..."
     install_files "$AGENTS_SOURCE" "$AGENTS_TARGET" "agents"
     
+    # Install scripts
+    echo ""
+    echo "Installing scripts..."
+    install_scripts "$SCRIPTS_SOURCE" "$SCRIPTS_TARGET"
+    
     # Create example files if no source directories exist
     if [ ! -d "$HOOKS_SOURCE" ] && [ ! -d "$COMMANDS_SOURCE" ] && [ ! -d "$AGENTS_SOURCE" ]; then
         echo ""
@@ -278,36 +346,80 @@ EOF
     echo ""
     print_status "success" "Installation complete!"
     
-    # Show installed files summary
+    # Show main installation summary
     echo ""
-    echo "Installed Files Summary"
-    echo "-----------------------"
+    echo "🎉 What was installed:"
+    echo "====================="
     
-    for dir in "$HOOKS_TARGET" "$COMMANDS_TARGET" "$AGENTS_TARGET"; do
-        if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
-            local type=$(basename "$dir")
-            echo ""
-            echo "$type:"
-            for file in "$dir"/*; do
-                if [ -e "$file" ]; then
-                    if [ -L "$file" ]; then
-                        # Show symlink target
-                        local target=$(readlink "$file")
-                        echo "  - $(basename "$file") -> $target"
-                    else
-                        echo "  - $(basename "$file")"
-                    fi
-                fi
-            done
-        fi
-    done
+    # Count what was installed
+    local hooks_count=0
+    local commands_count=0
+    local agents_count=0
+    local scripts_count=0
     
-    # Show mode-specific information
+    if [ -d "$HOOKS_TARGET" ] && [ "$(ls -A $HOOKS_TARGET 2>/dev/null)" ]; then
+        hooks_count=$(ls -1 "$HOOKS_TARGET" | wc -l | tr -d ' ')
+    fi
+    if [ -d "$COMMANDS_TARGET" ] && [ "$(ls -A $COMMANDS_TARGET 2>/dev/null)" ]; then
+        commands_count=$(ls -1 "$COMMANDS_TARGET" | wc -l | tr -d ' ')
+    fi
+    if [ -d "$AGENTS_TARGET" ] && [ "$(ls -A $AGENTS_TARGET 2>/dev/null)" ]; then
+        agents_count=$(ls -1 "$AGENTS_TARGET" | wc -l | tr -d ' ')
+    fi
+    if [ -d "$SCRIPTS_TARGET" ] && [ "$(ls -A $SCRIPTS_TARGET 2>/dev/null)" ]; then
+        for file in "$SCRIPTS_TARGET"/*; do
+            if [ -e "$file" ] && [[ "$(basename "$file")" =~ ^(new-worktree)$ ]]; then
+                ((scripts_count++))
+            fi
+        done
+    fi
+    
+    echo "  📁 $hooks_count Claude hooks (automated workflows)"
+    echo "  🎯 $commands_count Claude commands (chat shortcuts)"  
+    echo "  🤖 $agents_count Claude agents (specialized assistants)"
+    echo "  🛠️  $scripts_count utility scripts"
+    
+    # Show key new functionality
+    if [ $scripts_count -gt 0 ]; then
+        echo ""
+        echo "🌟 New Script Available:"
+        echo "======================="
+        echo "  new-worktree - Git worktree management tool"
+        echo ""
+        echo "  Usage examples:"
+        echo "    new-worktree -f user-auth        # Create feature branch"
+        echo "    new-worktree -i 123              # Create issue branch"
+        echo "    new-worktree -f login -i 456     # Create combined branch"
+        echo ""
+        echo "  This creates isolated git worktrees for parallel development"
+        echo "  without switching branches in your main working directory."
+    fi
+    
+    # Show installation mode info
     echo ""
+    echo "📋 Installation Details:"
+    echo "======================="
     if [ "$INSTALL_MODE" == "symlink" ]; then
-        print_status "info" "Files are symlinked - changes to source files will be reflected immediately"
+        echo "  Mode: Symlinked (development mode)"
+        echo "  Changes to source files are reflected immediately"
     else
-        print_status "info" "Files are copied - run this script again to update after changes"
+        echo "  Mode: Copied (production mode)"
+        echo "  Run './install.sh' again to update after changes"
+    fi
+    
+    # Show Claude usage info
+    echo ""
+    echo "🚀 Next Steps:"
+    echo "============="
+    echo "  1. Open Claude Code and type @help to see available commands"
+    echo "  2. Try '@compound-issue' or '@dowork' to get started"
+    echo "  3. Use 'new-worktree -f feature-name' for git worktrees"
+    
+    if [[ ":$PATH:" != *":$SCRIPTS_TARGET:"* ]]; then
+        echo ""
+        print_status "warning" "Add $SCRIPTS_TARGET to your PATH for script access:"
+        echo "    echo 'export PATH=\"\$PATH:$SCRIPTS_TARGET\"' >> ~/.zshrc"
+        echo "    source ~/.zshrc"
     fi
 }
 
