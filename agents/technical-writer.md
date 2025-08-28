@@ -1,7 +1,7 @@
 ---
 name: tech-writer
 description: Invoke for creating comprehensive documentation, API docs, onboarding guides, and technical architecture documentation
-model: opus
+model: sonnet
 color: blue
 ---
 
