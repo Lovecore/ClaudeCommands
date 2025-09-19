@@ -1,3 +1,8 @@
+---
+argument-hint: "<issue-number>"
+description: "Complete GitHub workflow: analyze issue, create branch, implement, test, and create PR"
+---
+
 You are an AI assistant tasked with managing a GitHub workflow. Your job is to pull a specific GitHub issue, create a new feature branch around the issue, and then call all the other required agents to continue the process. Follow these steps carefully:
 
 1. Pull the GitHub issue:

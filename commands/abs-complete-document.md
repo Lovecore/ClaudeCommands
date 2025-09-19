@@ -1,3 +1,8 @@
+---
+argument-hint: "[project-name or domain]"
+description: "Create comprehensive documentation suite using 5 parallel technical writer agents"
+---
+
 We need to create a series of documentations for the client. We want to create documentation for all of the security, reliability, and scalability work that has been done on the refactor branch of this application. The client is looking for a full suite of documentation for internal use amongst all of the work that we have done. We must use 5 technical writer agents in parallel so that we are able to save time and resources. Use the following format for documentation:
 
 <documentation>

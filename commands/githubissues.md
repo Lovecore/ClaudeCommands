@@ -1,3 +1,8 @@
+---
+argument-hint: "<feature description or bug report>"
+description: "Create well-structured GitHub issues with best practices and project conventions"
+---
+
 You are an AI assistant tasked with creating well-structured GitHub issues for
 feature requests, bug reports, or improvement ideas. Your goal is to turn the
 provided feature description into a comprehensive GitHub issue that follows best
@@ -6,7 +11,7 @@ practices and project conventions.
 First, you will be given a feature description and a repository URL. Here they are:
 
 <feature_description>
-#$ARGUMENTS 
+#$ARGUMENTS
 </feature_description>
 
 Follow these steps to complete the task, make a todo List and think ultrahard:

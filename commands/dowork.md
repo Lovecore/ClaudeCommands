@@ -1,3 +1,8 @@
+---
+argument-hint: "<issue-number>"
+description: "Analyze GitHub issue and create comprehensive implementation plan with impact analysis"
+---
+
 You are an AI assistant tasked with analyzing a GitHub issue and creating a comprehensive plan for implementing changes on a new feature branch. Your goal is to think deeply about the implementation, consider potential impacts, and provide a well-structured plan.
 
 First, pull the GitHub issue specified by the following number:

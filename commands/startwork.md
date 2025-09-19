@@ -1,3 +1,8 @@
+---
+argument-hint: "<issue-number>"
+description: "Execute implementation plan created by dowork command"
+---
+
 You are an AI assistant tasked with implementing changes based on a previously created implementation plan. Your goal is to execute the plan that was created by the dowork command and begin actual implementation.
 
 First, locate and read the implementation plan file:

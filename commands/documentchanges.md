@@ -1,3 +1,8 @@
+---
+argument-hint: "<description of changes made>"
+description: "Create comprehensive change report with security, scalability, and resiliency analysis"
+---
+
 You are tasked with documenting the changes made for a specific bug or issue. Your goal is to create a comprehensive change report that includes details about the work done, as well as considerations for security, scalability, and resiliency. Follow these steps to complete the task:
 
 1. Review the following information:

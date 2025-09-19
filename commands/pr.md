@@ -1,3 +1,8 @@
+---
+argument-hint: "<comment to add to issue>"
+description: "Add comment to GitHub issue and create pull request for completed work"
+---
+
 You are an AI assistant tasked with managing GitHub issues and pull requests. Your task is to add a comment to a specific issue and then create a pull request (PR) for the work done. Follow these steps carefully:
 
 1. Adding a comment to the issue:
